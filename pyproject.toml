@@ -1,0 +1,65 @@
+[tool.poetry]
+name = "fireproxng"
+version = "0.0.1"
+description = "Next generation fireprox AWS API endpoint creation utility."
+authors = ["Nicholas Anastasi <nanastasi@sprocketsecurity.com>"]
+readme = "README.md"
+homepage = "https://github.com/puzzlepeaches/fireproxng"
+repository = "https://github.com/puzzlepeaches/fireproxng"
+exclude = ["tests"]
+include = ["LICENSE", "CHANGELOG.md"]
+license = "BSD 3-Clause License"
+classifiers = [
+    "Environment :: Console",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+]
+
+packages = [{ include = "fireproxng" }]
+
+[tool.poetry.scripts]
+fireprox-ng = 'fireproxng.__main__:main'
+fpng = 'fireproxng.__main__:main'
+
+[tool.poetry.dependencies]
+python = "^3.8"
+click = "*"
+rich = "*"
+boto3 = "^1.24.41"
+tldextract = "^3.3.1"
+tzlocal = "^4.2"
+bs4 = "^0.0.1"
+lxml = "^4.9.1"
+validators = "^0.20.0"
+rich-click = "^1.5.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "*"
+flake8 = "*"
+black = "*"
+pre-commit = "*"
+isort = "*"
+
+[tool.black]
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.tox
+  | venv
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+# make it compatible with black
+profile = "black"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
