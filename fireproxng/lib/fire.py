@@ -77,6 +77,17 @@ class FireProx:
             proxy_url,
         )
 
+        # Convert timestamp to string
+        created_dt = response["createdDate"].strftime("%Y-%m-%d %H:%M:%S")
+
+        endpoint = {
+            "api_id": response["id"],
+            "proxy_url": proxy_url,
+            "name": response["name"],
+            "created": created_dt,
+        }
+        return endpoint
+
     def update(self):
         resource_id = self._get_resource(self.api_id)
 
@@ -131,6 +142,15 @@ class FireProx:
                     response = self.client.delete_rest_api(restApiId=self.api_id)
                     return True
             except Exception as a:
-                log.error(f"Error deleting API: {a}")
+                log.error(f"Error deleting API: {item_api_id}")
+
+                # Check if base path mappings in error
+                if "all base path mappings" in str(a):
+                    log.error(
+                        f"Base path mapping conflict. Delete the endpoint delete manually from AWS console."
+                    )
+                # Check if Too Many Requests
+                if "TooManyRequestsException" in str(a):
+                    log.error(f"Too Many Requests. Wait a few minutes and try again.")
                 pass
         return False

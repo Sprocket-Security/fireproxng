@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import json
 import logging
+import os
 import sys
 
 import click
@@ -77,10 +79,9 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help", "help"])
 )
 @click.option("-p", "--profile", type=str, default="default", help="AWS Profile")
 @click.pass_context
-@click.config_option(section="fireproxng")
 def main(ctx, access_key, secret_access_key, region, session_token, profile):
     """
-    fireprox-ng is a tool for deploying AWS API Gateway proxies.
+    fireproxng is a tool for deploying AWS API Gateway proxies.
     """
     ctx.ensure_object(dict)
     ctx.obj["ACCESS_KEY"] = access_key
@@ -93,12 +94,31 @@ def main(ctx, access_key, secret_access_key, region, session_token, profile):
 
 @main.command(no_args_is_help=False, context_settings=CONTEXT_SETTINGS)
 @click.pass_context
-@click.argument("target", nargs=-1)
-@config_option(strict=True)
-def create(ctx, target):
+@click.argument("target", nargs=-1, type=str, required=True)
+@click.argument(
+    "output", type=click.Path(writable=True, dir_okay=False), required=False
+)
+def create(ctx, target, output):
     """
-    Create a new fireprox-ng proxy.
+    Create a new fireproxng proxy. \n
+    Supports multiple targets or file of targets. \n
+    Supports output JSON file of API Gateway IDs. \n
+    Example: fpng create /path/to/targets.txt
     """
+
+    # Check if target is a file
+    try:
+        if os.path.exists(target[0]) and len(target) == 1:
+
+            # Convert tuple to string
+            target = target[0]
+
+            target = [line.strip() for line in open(target)]
+
+    except Exception as a:
+        log.error(f"Could not open file: {a}")
+        exit(1)
+    endpoints = {}
     for target in target:
 
         parser = Process(
@@ -116,13 +136,27 @@ def create(ctx, target):
         fire = FireProx(client, template, region, target)
 
         # Creating API Gateway proxy
-        fire.create()
+        endpoint = fire.create()
+
+        # Append endpoint to endpoints dict
+        endpoints[target] = endpoint
+
+    # Outputing endpoints to JSON file
+    if output:
+        # Check if output file exists
+        if os.path.exists(output):
+            log.error(f"File {output} already exists.")
+            if click.confirm("Do you want to overwrite it?"):
+                with open(output, "w") as f:
+                    json.dump(endpoints, f, indent=4)
 
 
 @main.command(no_args_is_help=False, context_settings=CONTEXT_SETTINGS)
 @click.pass_context
 def list(ctx):
-    """List all fireprox-ng proxies."""
+    """List all fireproxng proxies. \n
+    Example: fpng list \n
+    """
 
     parser = Process(
         ctx.obj["PROFILE"],
@@ -144,9 +178,25 @@ def list(ctx):
 @main.command(no_args_is_help=False, context_settings=CONTEXT_SETTINGS)
 @click.pass_context
 @click.argument("api_ids", nargs=-1, required=False, type=str)
-# def delete(access_key, secret_access_key, region, session_token, profile_name, api_ids):
 def delete(ctx, api_ids):
-    """Delete a fireprox-ng proxy."""
+    """Delete a fireproxng proxy. \n
+    Supports multiple API IDs or file of API IDs. \n
+    You can also delete all proxies by passing all in as the API ID. \n
+    Example: fpng delete /path/to/api_ids.txt
+    """
+
+    # Check if target is a file
+    try:
+        if os.path.exists(api_ids[0]) and len(api_ids) == 1:
+
+            # Convert tuple to string
+            api_ids = api_ids[0]
+
+            api_ids = [line.strip() for line in open(api_ids)]
+
+    except Exception as a:
+        log.error(f"Could not open file: {a}")
+        exit(1)
 
     for api_id in api_ids:
         parser = Process(
@@ -162,14 +212,19 @@ def delete(ctx, api_ids):
         # Initializing FireProx
         fire = FireProx(client, None, region, None, api_id)
 
-        result = fire.delete()
-        console.print(result)
+        result = []
+        result.append(fire.delete())
 
         # Deleting API Gateway proxy
         if api_id == "all":
-            log.info("All fireprox-ng proxies have been deleted successfully.")
+
+            # If all results are true, then all proxies were deleted
+            if all(result):
+                log.info("All proxies deleted.")
+            else:
+                log.error("Could not delete all proxies. Check logs for more info.")
         else:
-            log.info(f"fireprox-ng proxy {api_id} has been deleted successfully.")
+            log.info(f"fireproxng proxy - {api_id} has been deleted successfully.")
 
 
 @main.command(no_args_is_help=False, context_settings=CONTEXT_SETTINGS)
@@ -177,7 +232,10 @@ def delete(ctx, api_ids):
 @click.argument("api_id", type=str)
 @click.argument("target", type=str)
 def update(ctx, api_id, target):
-    """Update a fireproxy-ng proxy."""
+    """Update a fireproxyng proxy. \n
+    Example: fpng update <api_id> <target>
+    """
+
     parser = Process(
         ctx.obj["PROFILE"],
         ctx.obj["ACCESS_KEY"],
