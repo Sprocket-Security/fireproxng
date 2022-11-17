@@ -83,100 +83,131 @@ class Process:
             title = "fireprox_{}".format(tldextract.extract(self.target).domain)
             version_date = f"{datetime.datetime.now():%Y-%m-%dT%XZ}"
 
+            # Evasion techniques added from credmaster
+            # https://github.com/knavesec/CredMaster/blob/master/fire.py
             template = """
-                {
-                  "swagger": "2.0",
-                  "info": {
-                    "version": "{{version_date}}",
-                    "title": "{{title}}"
-                  },
-                  "basePath": "/",
-                  "schemes": [
-                    "https"
-                  ],
-                  "paths": {
-                    "/": {
-                      "get": {
-                        "parameters": [
-                          {
-                            "name": "proxy",
-                            "in": "path",
-                            "required": true,
-                            "type": "string"
-                          },
-                          {
-                            "name": "X-My-X-Forwarded-For",
-                            "in": "header",
-                            "required": false,
-                            "type": "string"
-                          }
-                        ],
-                        "responses": {},
-                        "x-amazon-apigateway-integration": {
-                          "uri": "{{url}}/",
-                          "responses": {
-                            "default": {
-                              "statusCode": "200"
-                            }
-                          },
-                          "requestParameters": {
-                            "integration.request.path.proxy": "method.request.path.proxy",
-                            "integration.request.header.X-Forwarded-For": "method.request.header.X-My-X-Forwarded-For"
-                          },
-                          "passthroughBehavior": "when_no_match",
-                          "httpMethod": "ANY",
-                          "cacheNamespace": "irx7tm",
-                          "cacheKeyParameters": [
-                            "method.request.path.proxy"
-                          ],
-                          "type": "http_proxy"
-                        }
+            {
+              "swagger": "2.0",
+              "info": {
+                "version": "{{version_date}}",
+                "title": "{{title}}"
+              },
+              "basePath": "/",
+              "schemes": [
+                "https"
+              ],
+              "paths": {
+                "/": {
+                  "get": {
+                    "parameters": [
+                      {
+                        "name": "proxy",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                      },
+                      {
+                        "name": "X-My-X-Forwarded-For",
+                        "in": "header",
+                        "required": false,
+                        "type": "string"
+                      },
+                      {
+                        "name": "X-My-Authorization",
+                        "in": "header",
+                        "required": false,
+                        "type": "string"
+                      },
+                      {
+                        "name" : "X-My-X-Amzn-Trace-Id",
+                        "in" : "header",
+                        "required" : false,
+                        "type" : "string"
                       }
-                    },
-                    "/{proxy+}": {
-                      "x-amazon-apigateway-any-method": {
-                        "produces": [
-                          "application/json"
-                        ],
-                        "parameters": [
-                          {
-                            "name": "proxy",
-                            "in": "path",
-                            "required": true,
-                            "type": "string"
-                          },
-                          {
-                            "name": "X-My-X-Forwarded-For",
-                            "in": "header",
-                            "required": false,
-                            "type": "string"
-                          }
-                        ],
-                        "responses": {},
-                        "x-amazon-apigateway-integration": {
-                          "uri": "{{url}}/{proxy}",
-                          "responses": {
-                            "default": {
-                              "statusCode": "200"
-                            }
-                          },
-                          "requestParameters": {
-                            "integration.request.path.proxy": "method.request.path.proxy",
-                            "integration.request.header.X-Forwarded-For": "method.request.header.X-My-X-Forwarded-For"
-                          },
-                          "passthroughBehavior": "when_no_match",
-                          "httpMethod": "ANY",
-                          "cacheNamespace": "irx7tm",
-                          "cacheKeyParameters": [
-                            "method.request.path.proxy"
-                          ],
-                          "type": "http_proxy"
+                    ],
+                    "responses": {},
+                    "x-amazon-apigateway-integration": {
+                      "uri": "{{url}}/",
+                      "responses": {
+                        "default": {
+                          "statusCode": "200"
                         }
+                      },
+                      "requestParameters": {
+                        "integration.request.path.proxy": "method.request.path.proxy",
+                        "integration.request.header.X-Forwarded-For" : "method.request.header.X-My-X-Forwarded-For",
+                        "integration.request.header.Authorization" : "method.request.header.X-My-Authorization",
+                        "integration.request.header.X-Amzn-Trace-Id" : "method.request.header.X-My-X-Amzn-Trace-Id"
+                      },
+                      "passthroughBehavior": "when_no_match",
+                      "httpMethod": "ANY",
+                      "cacheNamespace": "irx7tm",
+                      "cacheKeyParameters": [
+                        "method.request.path.proxy"
+                      ],
+                      "type": "http_proxy"
+                    }
+                  }
+                },
+                "/{proxy+}": {
+                  "x-amazon-apigateway-any-method": {
+                    "produces": [
+                      "application/json"
+                    ],
+                    "parameters": [
+                      {
+                        "name": "proxy",
+                        "in": "path",
+                        "required": true,
+                        "type": "string"
+                      },
+                      {
+                        "name": "X-My-X-Forwarded-For",
+                        "in": "header",
+                        "required": false,
+                        "type": "string"
+                      },
+                      {
+                        "name": "X-My-Authorization",
+                        "in": "header",
+                        "required": false,
+                        "type": "string"
+                      },
+                      {
+                        "name" : "X-My-X-Amzn-Trace-Id",
+                        "in" : "header",
+                        "required" : false,
+                        "type" : "string"
                       }
+                    ],
+                    "responses": {},
+                    "x-amazon-apigateway-integration": {
+                      "uri": "{{url}}/{proxy}",
+                      "responses": {
+                        "default": {
+                          "statusCode": "200"
+                        }
+                      },
+                      "requestParameters": {
+                        "integration.request.path.proxy": "method.request.path.proxy",
+                        "integration.request.header.X-Forwarded-For": "method.request.header.X-My-X-Forwarded-For",
+                        "integration.request.header.Authorization": "method.request.header.X-My-Authorization",
+                        "integration.request.header.X-Amzn-Trace-Id": "method.request.header.X-My-X-Amzn-Trace-Id"
+                      },
+                      "passthroughBehavior": "when_no_match",
+                      "httpMethod": "ANY",
+                      "cacheNamespace": "irx7tm",
+                      "cacheKeyParameters": [
+                        "method.request.path.proxy"
+                      ],
+                      "type": "http_proxy"
                     }
                   }
                 }
-                """
+              }
+            }
+            """
+
             template = template.replace("{{url}}", self.target)
             template = template.replace("{{title}}", title)
             template = template.replace("{{version_date}}", version_date)

@@ -31,7 +31,7 @@ tzlocal = "^4.2"
 bs4 = "^0.0.1"
 lxml = "^4.9.1"
 validators = "^0.20.0"
-rich-click = "^1.5.1"
+click-extra = "^3.0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"

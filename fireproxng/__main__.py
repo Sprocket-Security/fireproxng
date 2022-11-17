@@ -3,7 +3,8 @@
 import logging
 import sys
 
-import rich_click as click
+import click
+from click_extra import config_option
 from rich.console import Console
 from rich.logging import RichHandler
 
@@ -20,8 +21,7 @@ log = logging.getLogger("rich")
 
 # Initializing console for rich
 console = Console()
-click.rich_click.SHOW_METAVARS_COLUMN = False
-click.rich_click.SHOW_ARGUMENTS = True
+
 
 regions = [
     "us-east-1",
@@ -42,18 +42,12 @@ regions = [
 ]
 
 # Setting context settings for click
+# click.rich_click.SHOW_METAVARS_COLUMN = False
+# click.rich_click.SHOW_ARGUMENTS = True
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help", "help"])
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
-def main():
-    """
-    fireprox-ng is a tool for deploying AWS API Gateway proxies.
-    """
-    pass
-
-
-@main.command(no_args_is_help=True, context_settings=CONTEXT_SETTINGS)
 @click.option(
     "-ak",
     "--access_key",
@@ -81,16 +75,39 @@ def main():
 @click.option(
     "-st", "--session_token", type=str, default=None, help="AWS Session Token"
 )
-@click.argument("profile_name", default="default")
+@click.option("-p", "--profile", type=str, default="default", help="AWS Profile")
+@click.pass_context
+@click.config_option(section="fireproxng")
+def main(ctx, access_key, secret_access_key, region, session_token, profile):
+    """
+    fireprox-ng is a tool for deploying AWS API Gateway proxies.
+    """
+    ctx.ensure_object(dict)
+    ctx.obj["ACCESS_KEY"] = access_key
+    ctx.obj["SECRET_ACCESS_KEY"] = secret_access_key
+    ctx.obj["REGION"] = region
+    ctx.obj["SESSION_TOKEN"] = session_token
+    ctx.obj["PROFILE"] = profile
+    pass
+
+
+@main.command(no_args_is_help=False, context_settings=CONTEXT_SETTINGS)
+@click.pass_context
 @click.argument("target", nargs=-1)
-def create(profile_name, access_key, secret_access_key, session_token, region, target):
+@config_option(strict=True)
+def create(ctx, target):
     """
     Create a new fireprox-ng proxy.
     """
     for target in target:
 
         parser = Process(
-            profile_name, access_key, secret_access_key, session_token, region, target
+            ctx.obj["PROFILE"],
+            ctx.obj["ACCESS_KEY"],
+            ctx.obj["SECRET_ACCESS_KEY"],
+            ctx.obj["SESSION_TOKEN"],
+            ctx.obj["REGION"],
+            target,
         )
         template = parser.build_template()
         client, region = parser.auth_config_handler()
@@ -102,37 +119,18 @@ def create(profile_name, access_key, secret_access_key, session_token, region, t
         fire.create()
 
 
-@main.command(no_args_is_help=True, context_settings=CONTEXT_SETTINGS)
-@click.option(
-    "-ak",
-    "--access_key",
-    envvar="AWS_ACCESS_KEY_ID",
-    type=str,
-    default=None,
-    help="AWS Access Key ID",
-)
-@click.option(
-    "-sk",
-    "--secret_access_key",
-    envvar="AWS_SECRET_ACCESS_KEY",
-    type=str,
-    default=None,
-    help="AWS Secret Access Key",
-)
-@click.option(
-    "-r",
-    "--region",
-    type=click.Choice(regions),
-    envvar="AWS_REGION",
-    default="us-east-1",
-    help="AWS Region",
-)
-@click.option("-st", "--session_token", type=str, default=None)
-@click.argument("profile_name", default="default")
-def list(profile_name, access_key, secret_access_key, session_token, region):
+@main.command(no_args_is_help=False, context_settings=CONTEXT_SETTINGS)
+@click.pass_context
+def list(ctx):
     """List all fireprox-ng proxies."""
+
     parser = Process(
-        profile_name, access_key, secret_access_key, session_token, region, None
+        ctx.obj["PROFILE"],
+        ctx.obj["ACCESS_KEY"],
+        ctx.obj["SECRET_ACCESS_KEY"],
+        ctx.obj["SESSION_TOKEN"],
+        ctx.obj["REGION"],
+        None,
     )
     client, region = parser.auth_config_handler()
 
@@ -143,39 +141,21 @@ def list(profile_name, access_key, secret_access_key, session_token, region):
     fire.list()
 
 
-@main.command(no_args_is_help=True, context_settings=CONTEXT_SETTINGS)
-@click.option(
-    "-ak",
-    "--access_key",
-    envvar="AWS_ACCESS_KEY_ID",
-    type=str,
-    default=None,
-    help="AWS Access Key ID",
-)
-@click.option(
-    "-sk",
-    "--secret_access_key",
-    envvar="AWS_SECRET_ACCESS_KEY",
-    type=str,
-    default=None,
-    help="AWS Secret Access Key",
-)
-@click.option(
-    "-r",
-    "--region",
-    type=click.Choice(regions),
-    envvar="AWS_REGION",
-    default="us-east-1",
-    help="AWS Region",
-)
-@click.option("-st", "--session_token", type=str, default=None)
-@click.argument("profile_name", default="default")
-@click.argument("api_id", nargs=-1)
-def delete(profile_name, access_key, secret_access_key, session_token, region, api_id):
+@main.command(no_args_is_help=False, context_settings=CONTEXT_SETTINGS)
+@click.pass_context
+@click.argument("api_ids", nargs=-1, required=False, type=str)
+# def delete(access_key, secret_access_key, region, session_token, profile_name, api_ids):
+def delete(ctx, api_ids):
     """Delete a fireprox-ng proxy."""
-    for api_id in api_id:
+
+    for api_id in api_ids:
         parser = Process(
-            profile_name, access_key, secret_access_key, session_token, region, None
+            ctx.obj["PROFILE"],
+            ctx.obj["ACCESS_KEY"],
+            ctx.obj["SECRET_ACCESS_KEY"],
+            ctx.obj["SESSION_TOKEN"],
+            ctx.obj["REGION"],
+            None,
         )
         client, region = parser.auth_config_handler()
 
@@ -183,6 +163,7 @@ def delete(profile_name, access_key, secret_access_key, session_token, region, a
         fire = FireProx(client, None, region, None, api_id)
 
         result = fire.delete()
+        console.print(result)
 
         # Deleting API Gateway proxy
         if api_id == "all":
@@ -191,41 +172,19 @@ def delete(profile_name, access_key, secret_access_key, session_token, region, a
             log.info(f"fireprox-ng proxy {api_id} has been deleted successfully.")
 
 
-@main.command(no_args_is_help=True, context_settings=CONTEXT_SETTINGS)
-@click.option(
-    "-ak",
-    "--access_key",
-    envvar="AWS_ACCESS_KEY_ID",
-    type=str,
-    default=None,
-    help="AWS Access Key ID",
-)
-@click.option(
-    "-sk",
-    "--secret_access_key",
-    envvar="AWS_SECRET_ACCESS_KEY",
-    type=str,
-    default=None,
-    help="AWS Secret Access Key",
-)
-@click.option(
-    "-r",
-    "--region",
-    type=click.Choice(regions),
-    envvar="AWS_REGION",
-    default="us-east-1",
-    help="AWS Region",
-)
-@click.option("-st", "--session_token", type=str, default=None)
-@click.argument("profile_name", default="default")
+@main.command(no_args_is_help=False, context_settings=CONTEXT_SETTINGS)
+@click.pass_context
 @click.argument("api_id", type=str)
 @click.argument("target", type=str)
-def update(
-    profile_name, access_key, secret_access_key, session_token, region, api_id, target
-):
+def update(ctx, api_id, target):
     """Update a fireproxy-ng proxy."""
     parser = Process(
-        profile_name, access_key, secret_access_key, session_token, region, None
+        ctx.obj["PROFILE"],
+        ctx.obj["ACCESS_KEY"],
+        ctx.obj["SECRET_ACCESS_KEY"],
+        ctx.obj["SESSION_TOKEN"],
+        ctx.obj["REGION"],
+        None,
     )
     client, region = parser.auth_config_handler()
 

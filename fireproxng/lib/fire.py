@@ -79,6 +79,10 @@ class FireProx:
 
     def update(self):
         resource_id = self._get_resource(self.api_id)
+
+        if self.target.endswith("/"):
+            self.target = self.target[:-1]
+
         if resource_id:
             response = self.client.update_integration(
                 restApiId=self.api_id,
@@ -93,17 +97,6 @@ class FireProx:
                 ],
             )
             return response["uri"].replace("/{proxy}", "") == self.target
-
-    def delete(self):
-        items = self.list(self.api_id, delete=True)
-        for item in items:
-            item_api_id = item["id"]
-            if self.api_id == "all":
-                self.client.delete_rest_api(restApiId=item_api_id)
-            if item_api_id == self.api_id:
-                response = self.client.delete_rest_api(restApiId=self.api_id)
-                return True
-        return False
 
     def list(self, deleted_api_id=None, delete=False):
         response = self.client.get_rest_apis()
@@ -126,3 +119,18 @@ class FireProx:
         else:
             log.info(f"No fireprox-ng APIs found in {self.region}")
         return response["items"]
+
+    def delete(self):
+        items = self.list(self.api_id, delete=True)
+        for item in items:
+            item_api_id = item["id"]
+            try:
+                if self.api_id == "all":
+                    self.client.delete_rest_api(restApiId=item_api_id)
+                if item_api_id == self.api_id:
+                    response = self.client.delete_rest_api(restApiId=self.api_id)
+                    return True
+            except Exception as a:
+                log.error(f"Error deleting API: {a}")
+                pass
+        return False
