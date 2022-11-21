@@ -94,10 +94,14 @@ def main(ctx, access_key, secret_access_key, region, session_token, profile):
 
 @main.command(no_args_is_help=False, context_settings=CONTEXT_SETTINGS)
 @click.pass_context
-@click.argument("target", nargs=-1, type=str, required=True)
-@click.argument(
-    "output", type=click.Path(writable=True, dir_okay=False), required=False
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(writable=True, dir_okay=False),
+    required=False,
+    help="Optional output file",
 )
+@click.argument("target", nargs=-1, type=str, required=True)
 def create(ctx, target, output):
     """
     Create a new fireproxng proxy. \n
@@ -149,6 +153,9 @@ def create(ctx, target, output):
             if click.confirm("Do you want to overwrite it?"):
                 with open(output, "w") as f:
                     json.dump(endpoints, f, indent=4)
+        else:
+            with open(output, "w") as f:
+                json.dump(endpoints, f, indent=4)
 
 
 @main.command(no_args_is_help=False, context_settings=CONTEXT_SETTINGS)
@@ -212,19 +219,20 @@ def delete(ctx, api_ids):
         # Initializing FireProx
         fire = FireProx(client, None, region, None, api_id)
 
-        result = []
-        result.append(fire.delete())
+        results = []
+        result = fire.delete()[0]
+        results.append(result["ResponseMetadata"]["HTTPStatusCode"])
 
-        # Deleting API Gateway proxy
-        if api_id == "all":
+    if api_id == "all":
 
-            # If all results are true, then all proxies were deleted
-            if all(result):
-                log.info("All proxies deleted.")
-            else:
-                log.error("Could not delete all proxies. Check logs for more info.")
+        # If all results are 202, then all proxies were deleted
+        if all(result == 202 for result in results):
+            log.info("All proxies were deleted.")
         else:
-            log.info(f"fireproxng proxy - {api_id} has been deleted successfully.")
+            log.error("Could not delete all proxies. Check logs for more info.")
+
+    else:
+        log.info(f"fireproxng proxy - {api_id} has been deleted successfully.")
 
 
 @main.command(no_args_is_help=False, context_settings=CONTEXT_SETTINGS)

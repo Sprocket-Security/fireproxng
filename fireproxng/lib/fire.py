@@ -125,7 +125,7 @@ class FireProx:
                             f"[{created_dt}] ({api_id}) {name} {url} -> ({proxy_url})"
                         )
                 except Exception as a:
-                    log.error(f"Error listing APIs: {a}")
+                    log.error(f"Error Getting APIs: {a}")
                     exit(1)
         else:
             log.info(f"No fireprox-ng APIs found in {self.region}")
@@ -133,14 +133,17 @@ class FireProx:
 
     def delete(self):
         items = self.list(self.api_id, delete=True)
+        results = []
         for item in items:
             item_api_id = item["id"]
             try:
                 if self.api_id == "all":
-                    self.client.delete_rest_api(restApiId=item_api_id)
+                    response = self.client.delete_rest_api(restApiId=item_api_id)
+                    results.append(response)
                 if item_api_id == self.api_id:
                     response = self.client.delete_rest_api(restApiId=self.api_id)
-                    return True
+                    results.append(response)
+
             except Exception as a:
                 log.error(f"Error deleting API: {item_api_id}")
 
@@ -150,7 +153,12 @@ class FireProx:
                         f"Base path mapping conflict. Delete the endpoint delete manually from AWS console."
                     )
                 # Check if Too Many Requests
-                if "TooManyRequestsException" in str(a):
+                elif "TooManyRequestsException" in str(a):
                     log.error(f"Too Many Requests. Wait a few minutes and try again.")
-                pass
-        return False
+
+                else:
+                    log.error(f"Error: {a}")
+
+                return False
+
+        return results
