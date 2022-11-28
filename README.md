@@ -14,10 +14,11 @@ fireproxng is a refresh of the widely loved fireprox.
 [Coming Soon](#coming-soon) •
 [Thanks](#thanks)
 
+#### Check out the [Sprocket Security Blog](https://sprocketsecurity.com/resources/) for more details!
+
 </div><br>
 
 </div>
-<br>
 
 # Why
 
