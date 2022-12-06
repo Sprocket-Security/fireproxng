@@ -22,7 +22,7 @@ fireproxng is a refresh of the widely loved fireprox.
 
 # Why
 
-The original fireprox project appears to be mostly umaintained and I assume most organizations have transitioned to maintaining an internal version of the tool. We need fireprox to enable continuous penetration testing and would like to open up the updated version of the tool to the public.
+The original fireprox project appears to be mostly unchanged and I assume most organizations have transitioned to maintaining an internal version of the tool. We need fireprox to enable continuous penetration testing and would like to open up the updated version of the tool to the public.
 
 fireproxng also includes some evasion features that are not present in the original fireprox. Please see the [Thanks](#thanks) section for more information.
 
