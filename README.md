@@ -14,7 +14,7 @@ fireproxng is a refresh of the widely loved fireprox.
 [Coming Soon](#coming-soon) •
 [Thanks](#thanks)
 
-#### Check out the [Sprocket Security Blog]([https://sprocketsecurity.com/resources/](https://www.sprocketsecurity.com/resources/evading-external-network-security-controls)) for more details!
+#### Check out the [Sprocket Security Blog](https://www.sprocketsecurity.com/resources/evading-external-network-security-controls) for more details!
 
 </div><br>
 
